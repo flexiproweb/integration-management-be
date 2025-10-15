@@ -1,9 +1,40 @@
 const { Sequelize } = require('sequelize');
 const oracledb = require('oracledb');
+const path = require('path');
 require('dotenv').config();
 
+// Get Oracle Client path dynamically handling nested folders
+function getOracleClientPath() {
+  if (process.env.ORACLE_CLIENT_PATH) {
+    return path.resolve(__dirname, '..', process.env.ORACLE_CLIENT_PATH);
+  }
+  
+  // Auto-detect based on platform with nested folder names
+  const isWindows = process.platform === 'win32';
+  const defaultPath = isWindows 
+    ? './instantclient/windows/instantclient_19_28'   // Windows nested folder
+    : './instantclient/linux/instantclient_21_12';    // Linux nested folder
+  
+  return path.resolve(__dirname, '..', defaultPath);
+}
+
+const clientPath = getOracleClientPath();
+
 // Initialize Oracle Client in Thick mode
-oracledb.initOracleClient({ libDir: 'C:\\Windows\\instantclient_19_28' });
+try {
+  oracledb.initOracleClient({ libDir: clientPath });
+  console.log(`✅ Oracle Instant Client initialized`);
+  console.log(`   Platform: ${process.platform}`);
+  console.log(`   Path: ${clientPath}`);
+} catch (err) {
+  if (err.message.includes('DPI-1047')) {
+    console.log('ℹ️ Oracle Client already initialized');
+  } else {
+    console.error('❌ Failed to initialize Oracle Client:', err.message);
+    console.error(`   Attempted path: ${clientPath}`);
+    throw err;
+  }
+}
 
 // Map to cache Sequelize instances per customer
 const connectionCache = new Map();
@@ -17,11 +48,11 @@ function createSequelizeConnection(dbConfig) {
       connectString: dbConfig.connectString
     },
     pool: {
-      max: 5,              // Maximum 5 connections in pool
-      min: 0,              // Minimum 0 connections (can shrink to zero)
-      acquire: 30000,      // Maximum time (ms) to get connection before timeout
-      idle: 600000,        // Connection idle for 10 minutes = eligible for eviction
-      evict: 60000         // Check every 1 minute for idle connections to evict
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 600000,
+      evict: 60000
     },
     logging: false
   });
@@ -29,31 +60,25 @@ function createSequelizeConnection(dbConfig) {
   return sequelize;
 }
 
-// Get or create cached Sequelize instance
 async function getConnection(companyId, configId, dbName, dbConfig) {
   const cacheKey = `${companyId}-${configId}-${dbName}`;
   
-  // Check if Sequelize instance exists in cache
   if (connectionCache.has(cacheKey)) {
     console.log(`✅ Reusing cached Sequelize instance: ${cacheKey}`);
     return connectionCache.get(cacheKey);
   }
   
-  // Create new Sequelize instance
   console.log(`🔧 Creating new Sequelize instance: ${cacheKey}`);
   const sequelize = createSequelizeConnection(dbConfig);
   
-  // Test connection (this will create first connection in pool)
   await sequelize.authenticate();
   
-  // Store Sequelize instance in cache (NOT the connection)
   connectionCache.set(cacheKey, sequelize);
   
   console.log(`✅ Sequelize instance cached: ${cacheKey}`);
   return sequelize;
 }
 
-// Close all Sequelize instances
 async function closeAllConnections() {
   console.log('🔒 Closing all Sequelize instances...');
   for (const [key, sequelize] of connectionCache.entries()) {
