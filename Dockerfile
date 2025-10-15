@@ -11,7 +11,7 @@ RUN apt-get update && \
 COPY . .
 
 # Install dependencies and build the project
-RUN npm install --force && npm run build
+RUN npm install --force 
 
 # Expose your app port
 EXPOSE 3000
