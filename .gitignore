@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+.env.production
+
+# Ignore Instant Client binaries (large files)
+instantclient/windows/instantclient_19_28/
+instantclient/linux/instantclient_21_12/
+
+# Keep the parent directories
+!instantclient/windows/.gitkeep
+!instantclient/linux/.gitkeep
