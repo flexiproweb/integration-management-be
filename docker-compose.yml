@@ -1,0 +1,12 @@
+version: "3.8"
+# -d is to keep running in the background
+# docker compose up -d --build
+services:
+  integration-management-be:
+    build: .
+    container_name: integration-management-be
+    image: integration-management-be-image
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
