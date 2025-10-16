@@ -39,7 +39,7 @@ function createSequelizeConnection(dbConfig) {
       min: 0,
       acquire: 30000,
       idle: 600000,
-      evict: 60000
+      evict: 60000,
       max: 5,
       min: 0,
       acquire: 30000,
