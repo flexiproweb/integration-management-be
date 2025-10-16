@@ -46,6 +46,6 @@ next-env.d.ts
 # Ignore Instant Client binaries (large files)
 
 /instantclient
-instantclient
-
+instantclient/linux/
+instantclient/windows/
 
