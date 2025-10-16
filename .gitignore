@@ -53,4 +53,5 @@ instantclient/linux/**
 
 # Optional: ignore from anywhere in the repo
 **/instantclient/
+**/instantclient/****/instantclient/
 **/instantclient/**
