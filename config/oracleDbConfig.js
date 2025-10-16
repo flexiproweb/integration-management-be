@@ -1,6 +1,24 @@
 const { Sequelize } = require('sequelize');
 const oracledb = require('oracledb');
+const path = require('path');
 require('dotenv').config();
+
+// Get Oracle Client path dynamically handling nested folders
+function getOracleClientPath() {
+  if (process.env.ORACLE_CLIENT_PATH) {
+    return path.resolve(__dirname, '..', process.env.ORACLE_CLIENT_PATH);
+  }
+  
+  // Auto-detect based on platform with nested folder names
+  const isWindows = process.platform === 'win32';
+  const defaultPath = isWindows 
+    ? './instantclient/windows/instantclient_19_28'   // Windows nested folder
+    : './instantclient/linux/instantclient_21_12';    // Linux nested folder
+  
+  return path.resolve(__dirname, '..', defaultPath);
+}
+
+const clientPath = getOracleClientPath();
 
 // Oracle Client already initialized in index.js
 console.log('📌 oracleDbConfig loaded - Oracle mode:', oracledb.thin ? 'THIN' : 'THICK');
@@ -17,6 +35,11 @@ function createSequelizeConnection(dbConfig) {
       connectString: dbConfig.connectString
     },
     pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 600000,
+      evict: 60000
       max: 5,
       min: 0,
       acquire: 30000,
