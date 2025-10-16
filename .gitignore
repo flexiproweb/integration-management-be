@@ -44,7 +44,13 @@ next-env.d.ts
 .env.production
 
 # Ignore Instant Client binaries (large files)
+instantclient/
+instantclient/**
 
-/instantclient
+# If nested inside a specific path (e.g., /instantclient/linux/)
+instantclient/linux/
+instantclient/linux/**
 
-
+# Optional: ignore from anywhere in the repo
+**/instantclient/
+**/instantclient/**
