@@ -1,5 +1,6 @@
 const { getConnection } = require('../config/oracleDbConfig');
 const { getExtDbInfo } = require('../helper/api');
+// Just require oracledb directly - it's already initialized in index.js
 const oracledb = require('oracledb');
 
 async function checkConnection(payload) {
@@ -22,7 +23,7 @@ async function checkConnection(payload) {
       password: decodedPassword,
       connectString: `${dbInfo.db_host}:${dbInfo.db_port}/${dbInfo.db_service_name}`
     };
-    // console.log(dbConfig,"dbconfig values")
+
     // Get cached Sequelize instance (or create new one)
     const sequelize = await getConnection(
       payload.CompanyId,

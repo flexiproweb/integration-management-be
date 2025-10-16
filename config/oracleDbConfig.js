@@ -20,21 +20,8 @@ function getOracleClientPath() {
 
 const clientPath = getOracleClientPath();
 
-// Initialize Oracle Client in Thick mode
-try {
-  oracledb.initOracleClient({ libDir: clientPath });
-  console.log(`✅ Oracle Instant Client initialized`);
-  console.log(`   Platform: ${process.platform}`);
-  console.log(`   Path: ${clientPath}`);
-} catch (err) {
-  if (err.message.includes('DPI-1047')) {
-    console.log('ℹ️ Oracle Client already initialized');
-  } else {
-    console.error('❌ Failed to initialize Oracle Client:', err.message);
-    console.error(`   Attempted path: ${clientPath}`);
-    throw err;
-  }
-}
+// Oracle Client already initialized in index.js
+console.log('📌 oracleDbConfig loaded - Oracle mode:', oracledb.thin ? 'THIN' : 'THICK');
 
 // Map to cache Sequelize instances per customer
 const connectionCache = new Map();
@@ -48,6 +35,11 @@ function createSequelizeConnection(dbConfig) {
       connectString: dbConfig.connectString
     },
     pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 600000,
+      evict: 60000,
       max: 5,
       min: 0,
       acquire: 30000,
@@ -71,7 +63,13 @@ async function getConnection(companyId, configId, dbName, dbConfig) {
   console.log(`🔧 Creating new Sequelize instance: ${cacheKey}`);
   const sequelize = createSequelizeConnection(dbConfig);
   
-  await sequelize.authenticate();
+  try {
+    await sequelize.authenticate();
+    console.log(`✅ Database connection authenticated: ${cacheKey}`);
+  } catch (error) {
+    console.error(`❌ Database authentication failed: ${cacheKey}`, error.message);
+    throw error;
+  }
   
   connectionCache.set(cacheKey, sequelize);
   
@@ -82,10 +80,15 @@ async function getConnection(companyId, configId, dbName, dbConfig) {
 async function closeAllConnections() {
   console.log('🔒 Closing all Sequelize instances...');
   for (const [key, sequelize] of connectionCache.entries()) {
-    await sequelize.close();
-    console.log(`🔒 Closed: ${key}`);
+    try {
+      await sequelize.close();
+      console.log(`🔒 Closed: ${key}`);
+    } catch (error) {
+      console.error(`❌ Error closing connection ${key}:`, error.message);
+    }
   }
   connectionCache.clear();
+  console.log('✅ All connections closed');
 }
 
 module.exports = { 
