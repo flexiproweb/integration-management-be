@@ -1,20 +1,25 @@
 // index.js - ABSOLUTELY FIRST LINES
 const oracledb = require('oracledb');
 const path = require('path');
-require('dotenv').config(); // Load env first for ORACLE_CLIENT_PATH
+const fs = require('fs');
+require('dotenv').config();
 
 // Initialize Oracle Client IMMEDIATELY
 let clientPath;
 
-if (process.env.ORACLE_CLIENT_PATH) {
+// Check if ORACLE_CLIENT_PATH is set and actually exists
+if (process.env.ORACLE_CLIENT_PATH && fs.existsSync(process.env.ORACLE_CLIENT_PATH)) {
+  // Use env variable (for local development only)
   clientPath = path.resolve(process.env.ORACLE_CLIENT_PATH);
   console.log('📍 Using ORACLE_CLIENT_PATH from .env');
 } else {
+  // Auto-detect based on platform (works for both server and Docker)
   const isWindows = process.platform === 'win32';
   clientPath = path.resolve(__dirname, isWindows 
     ? './instantclient/windows/instantclient_19_28'
     : './instantclient/linux/instantclient_21_12'
   );
+  console.log('📍 Using project instantclient folder');
 }
 
 if (process.platform !== 'win32') {
@@ -24,6 +29,13 @@ if (process.platform !== 'win32') {
 console.log('🚀 Initializing Oracle Client in THICK mode...');
 console.log(`📍 Path: ${clientPath}`);
 console.log(`📍 LD_LIBRARY_PATH: ${process.env.LD_LIBRARY_PATH || 'Not set'}`);
+
+// Verify path exists before initializing
+if (!fs.existsSync(clientPath)) {
+  console.error(`❌ Oracle Client path does not exist: ${clientPath}`);
+  console.error(`Current directory: ${__dirname}`);
+  process.exit(1);
+}
 
 try {
   oracledb.initOracleClient({ libDir: clientPath });
@@ -45,7 +57,6 @@ const labelRoutes = require("./routes/labelRoutes");
 const { closeAllConnections } = require("./config/oracleDbConfig");
 
 const app = express();
-
 app.use(express.json());
 app.use("/", labelRoutes);
 

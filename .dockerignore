@@ -1,0 +1,13 @@
+# Create .dockerignore file
+cat > .dockerignore << 'EOF'
+node_modules
+.git
+.env.local
+.env.development
+npm-debug.log
+.DS_Store
+*.log
+.vscode
+.idea
+instantclient/windows
+EOF

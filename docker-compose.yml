@@ -1,6 +1,5 @@
 version: "3.8"
-# -d is to keep running in the background
-# docker compose up -d --build
+
 services:
   integration-management-be:
     build: .
@@ -8,5 +7,13 @@ services:
     image: integration-management-be-image
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_INFO_ENDPOINT=${DB_INFO_ENDPOINT}
+      # DO NOT set ORACLE_CLIENT_PATH - let it auto-detect
     volumes:
-      - .:/usr/src/app
+      # Optional: Only if you need to modify code without rebuilding
+      - ./src:/usr/src/app/src
+      - ./config:/usr/src/app/config
+      # Do NOT mount the entire project as it overrides the container
+    restart: unless-stopped
