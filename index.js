@@ -4,69 +4,89 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+
 // Initialize Oracle Client IMMEDIATELY
 let clientPath;
 
 // Check if ORACLE_CLIENT_PATH is set and actually exists
 if (process.env.ORACLE_CLIENT_PATH && fs.existsSync(process.env.ORACLE_CLIENT_PATH)) {
-  // Use env variable (for local development only)
   clientPath = path.resolve(process.env.ORACLE_CLIENT_PATH);
-  console.log('📍 Using ORACLE_CLIENT_PATH from .env');
 } else {
-  // Auto-detect based on platform (works for both server and Docker)
   const isWindows = process.platform === 'win32';
   clientPath = path.resolve(__dirname, isWindows 
     ? './instantclient/windows/instantclient_19_28'
     : './instantclient/linux/instantclient_21_12'
   );
-  console.log('📍 Using project instantclient folder');
 }
 
 if (process.platform !== 'win32') {
   process.env.LD_LIBRARY_PATH = clientPath + ':' + (process.env.LD_LIBRARY_PATH || '');
 }
 
-console.log('🚀 Initializing Oracle Client in THICK mode...');
-console.log(`📍 Path: ${clientPath}`);
-console.log(`📍 LD_LIBRARY_PATH: ${process.env.LD_LIBRARY_PATH || 'Not set'}`);
-
 // Verify path exists before initializing
 if (!fs.existsSync(clientPath)) {
-  console.error(`❌ Oracle Client path does not exist: ${clientPath}`);
-  console.error(`Current directory: ${__dirname}`);
   process.exit(1);
 }
 
 try {
   oracledb.initOracleClient({ libDir: clientPath });
-  console.log('✅ SUCCESS: Oracle Client initialized in THICK mode');
 } catch (err) {
   console.error('❌ FAILED to initialize Oracle Client:', err.message);
   process.exit(1);
 }
 
-// Verify immediately
-console.log('\n=== VERIFICATION ===');
-console.log(`Mode: ${oracledb.thin ? '❌ THIN' : '✅ THICK'}`);
-console.log(`Version: ${oracledb.oracleClientVersionString || 'N/A'}`);
-console.log('====================\n');
-
 // NOW load everything else
 const express = require("express");
+
+// console.log('🔥 Step 1: Loading routes file...');
 const labelRoutes = require("./routes/labelRoutes");
+// console.log('✅ Step 1 complete: Routes file loaded');
+
 const { closeAllConnections } = require("./config/oracleDbConfig");
 
+// console.log('🔥 Step 2: Creating Express app...');
 const app = express();
-app.use(express.json());
-app.use("/", labelRoutes);
+// console.log('✅ Step 2 complete: App created');
 
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Pool eviction runs every 1 minute`);
-  console.log(`Connections idle for 10+ minutes will be closed automatically`);
+// console.log('🔥 Step 3: Adding JSON middleware...');
+app.use(express.json());
+// console.log('✅ Step 3 complete: JSON middleware added');
+
+// Add request logger
+// console.log('🔥 Step 4: Adding request logger...');
+
+
+// console.log('🔥 Step 5: Mounting routes at "/"...');
+app.use("/", labelRoutes);
+// console.log('✅ Step 5 complete: Routes mounted');
+
+// 404 handler - MUST be after all routes
+app.use((req, res) => {
+  // console.log(`\n❌ 404 - No route matched: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    error: 'Route not found',
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    availableRoutes: [
+      'GET /test',
+      'POST /fetch-external-shipment-data'
+    ]
+  });
 });
 
+const PORT = process.env.PORT || 3000;
+// console.log(`🔥 Step 6: Starting server on port ${PORT}...`);
+
+const server = app.listen(PORT, () => {
+
+  
+  // List all registered routes
+  // console.log('🗺️  Registered routes:');
+
+  
+  // console.log(`\n📊 Total routes registered: ${routeCount}\n`);
+});
 process.on("SIGTERM", async () => {
   console.log("Shutting down...");
   server.close(async () => {
@@ -76,7 +96,7 @@ process.on("SIGTERM", async () => {
 });
 
 process.on("SIGINT", async () => {
-  console.log("Shutting down...");
+  // console.log("Shutting down...");
   server.close(async () => {
     await closeAllConnections();
     process.exit(0);

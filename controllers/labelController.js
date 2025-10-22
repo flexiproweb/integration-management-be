@@ -1,6 +1,7 @@
 const { checkConnection, callStoredProcedure } = require('../services/labelService');
-
+const AppError = require('../helper/appError'); 
 async function executeProcedure(req, res) {
+  
   try {
     const { 
       CompanyId, 
@@ -40,6 +41,9 @@ async function executeProcedure(req, res) {
 
   } catch (err) {
     console.error('❌ Error:', err);
+     if (err instanceof AppError) {
+      return res.status(err.status).json({ success: false, error: err.error });
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to execute procedure',

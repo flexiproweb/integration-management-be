@@ -21,7 +21,7 @@ function getOracleClientPath() {
 const clientPath = getOracleClientPath();
 
 // Oracle Client already initialized in index.js
-console.log('📌 oracleDbConfig loaded - Oracle mode:', oracledb.thin ? 'THIN' : 'THICK');
+// console.log('📌 oracleDbConfig loaded - Oracle mode:', oracledb.thin ? 'THIN' : 'THICK');
 
 // Map to cache Sequelize instances per customer
 const connectionCache = new Map();
@@ -56,29 +56,29 @@ async function getConnection(companyId, configId, dbName, dbConfig) {
   const cacheKey = `${companyId}-${configId}-${dbName}`;
   
   if (connectionCache.has(cacheKey)) {
-    console.log(`✅ Reusing cached Sequelize instance: ${cacheKey}`);
+    // console.log(`✅ Reusing cached Sequelize instance: ${cacheKey}`);
     return connectionCache.get(cacheKey);
   }
   
-  console.log(`🔧 Creating new Sequelize instance: ${cacheKey}`);
+  // console.log(`🔧 Creating new Sequelize instance: ${cacheKey}`);
   const sequelize = createSequelizeConnection(dbConfig);
   
   try {
     await sequelize.authenticate();
-    console.log(`✅ Database connection authenticated: ${cacheKey}`);
+    // console.log(`✅ Database connection authenticated: ${cacheKey}`);
   } catch (error) {
-    console.error(`❌ Database authentication failed: ${cacheKey}`, error.message);
+    // console.error(`❌ Database authentication failed: ${cacheKey}`, error.message);
     throw error;
   }
   
   connectionCache.set(cacheKey, sequelize);
   
-  console.log(`✅ Sequelize instance cached: ${cacheKey}`);
+  // console.log(`✅ Sequelize instance cached: ${cacheKey}`);
   return sequelize;
 }
 
 async function closeAllConnections() {
-  console.log('🔒 Closing all Sequelize instances...');
+  // console.log('🔒 Closing all Sequelize instances...');
   for (const [key, sequelize] of connectionCache.entries()) {
     try {
       await sequelize.close();
