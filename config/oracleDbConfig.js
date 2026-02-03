@@ -32,21 +32,44 @@ function createSequelizeConnection(dbConfig) {
     username: dbConfig.user,
     password: dbConfig.password,
     dialectOptions: {
-      connectString: dbConfig.connectString
+      connectString: dbConfig.connectString,
+      // Oracle oracledb module specific timeouts
+      connectTimeout: 60,           // Connection timeout in seconds
+      callTimeout: 300000,          // Query/procedure timeout in ms (5 minutes)
+      queueTimeout: 60000,          // Time to wait for connection from pool
+      // Additional Oracle settings
+      stmtCacheSize: 30,            // Statement cache size
+      fetchArraySize: 100,          // Rows to fetch at once
     },
     pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 600000,
-      evict: 60000,
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 600000,
-      evict: 60000
+      max: 20,
+      min: 2,                       // Changed from 0 - keep some connections warm
+      acquire: 90000,               // Increased from 30000 (90 seconds to acquire)
+      idle: 600000,                 // 10 minutes idle timeout
+      evict: 60000,                 // Check for idle connections every minute
     },
-    logging: false
+    // Query-level timeout
+    dialectOptions: {
+      connectString: dbConfig.connectString,
+      connectTimeout: 60,
+      callTimeout: 300000,          // 5 minutes for stored procedures
+      queueTimeout: 60000,
+    },
+    logging: false,
+    // Retry failed connections
+    retry: {
+      max: 3,
+      match: [
+        /SequelizeConnectionError/,
+        /SequelizeConnectionRefusedError/,
+        /SequelizeHostNotFoundError/,
+        /SequelizeHostNotReachableError/,
+        /SequelizeInvalidConnectionError/,
+        /SequelizeConnectionTimedOutError/,
+        /timeout/i,
+        /ETIMEDOUT/,
+      ],
+    },
   });
 
   return sequelize;

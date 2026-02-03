@@ -30,6 +30,14 @@ if (!fs.existsSync(clientPath)) {
 
 try {
   oracledb.initOracleClient({ libDir: clientPath });
+  oracledb.fetchAsString = [oracledb.CLOB];
+  oracledb.fetchAsBuffer = [oracledb.BLOB];
+  oracledb.autoCommit = false;
+  
+  // CRITICAL: Set default timeouts globally
+  oracledb.queueTimeout = 60000;      // 60 seconds to get connection from pool
+  oracledb.poolTimeout = 60;          // 60 seconds pool timeout
+  
 } catch (err) {
   console.error('❌ FAILED to initialize Oracle Client:', err.message);
   process.exit(1);
